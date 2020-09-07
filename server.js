@@ -32,6 +32,13 @@ io.on('connection', socket => {
         await socket.join(roomId);
         callback(roomId)
     })
+
+    socket.on('search', ({ keyword }, callback) => {
+        if(keyword.length === 0) return callback([]);
+        
+        let searched = activeSockets.filter(person => person.username.includes(keyword));
+        callback(searched);
+    })
     
     socket.on('new_call', async ({ to, room }) => {
 
@@ -39,7 +46,7 @@ io.on('connection', socket => {
 
             socket.emit('connecting');
 
-            await socket.to(to).emit('new_call', { from: socket.username, room });
+            await socket.to(to).emit('new_call', { id: socket.id, from: socket.username, room });
 
             socket.leave(to);
 
@@ -77,6 +84,10 @@ io.on('connection', socket => {
         // socket.join(to);
         socket.to(to).emit('decline_call', { id: socket.id });
         callback(true)
+    })
+
+    socket.on('busy', ({ id }) => {
+        socket.to(id).emit('busy', { id: socket.id });
     })
 
     socket.on('disconnect', () => {
